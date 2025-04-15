@@ -4,9 +4,10 @@ import copy
 from ..utils.helper import set_value
 
 
-def create_room(room_name: str) -> Dict[str, Any]:
+def create_room(room_data: Dict[str, Any], room_name: str) -> Dict[str, Any]:
         """채팅방 데이터 구조 생성"""
         return {
+            **room_data,
             "roomName": room_name,
             "users": {}
         }
