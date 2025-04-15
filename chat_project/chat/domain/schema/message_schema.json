@@ -3,7 +3,7 @@
     "properties": {
         "type": {"type": "string"},
         "message": {"type": "string"},
-        "userId": {"type": "string"},
+        "userId": {"type": "string"}
     },
     "required": ["type", "message", "userId"]
 }
