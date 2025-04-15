@@ -1,0 +1,31 @@
+{
+    "type": "object",
+    "properties": {
+      "rooms": {
+        "type": "object",
+        "patternProperties": {
+          ".*": {
+            "type": "object",
+            "properties": {
+              "roomName": {"type": "string"},
+              "users": {
+                "type": "object",
+                "patternProperties": {
+                  ".*": {
+                    "type": "object",
+                    "properties": {
+                      "channelName": {"type": "string"}
+                    },
+                    "required": ["channelName"]
+                  }
+                }
+              }
+            },
+            "required": ["roomName", "users"]
+          }
+        }
+      }
+    },
+    "required": ["rooms"]
+  }
+  
