@@ -1,8 +1,8 @@
 import json
 import base64
 import uuid
+from datetime import datetime
 from channels.generic.websocket import WebsocketConsumer
-from channels.layers import get_channel_layer
 from asgiref.sync import async_to_sync
 from ...infrastructure.state_management import ChatSystemState
 from ...infrastructure.effect_executor import execute_effects
@@ -32,18 +32,11 @@ class ChatConsumer(WebsocketConsumer):
             current_state = ChatSystemState.get()
             ChatSystemState.commit(current_state, system_data)
         
-        # 효과 실행
-        for effect_type, *args in effects:
-            if effect_type == "group_add":
-                group_name, channel_name = args
-                async_to_sync(self.channel_layer.group_add)(group_name, channel_name)
-            elif effect_type == "group_send":
-                group_name, message = args
-                async_to_sync(self.channel_layer.group_send)(group_name, message)
-            elif effect_type == "error":
-                error_message = args[0]
-                self.close(code=4000)
-                return
+        # 효과 실행 및 에러 처리
+        result = async_to_sync(execute_effects)(effects, self.channel_layer)
+        if isinstance(result, dict) and result.get("type") == "error":
+            self.close(code=4000)
+            return
         
         self.accept()
     
@@ -63,14 +56,11 @@ class ChatConsumer(WebsocketConsumer):
             current_state = ChatSystemState.get()
             ChatSystemState.commit(current_state, system_data)
         
-        # 효과 실행
-        for effect_type, *args in effects:
-            if effect_type == "group_discard":
-                group_name, channel_name = args
-                async_to_sync(self.channel_layer.group_discard)(group_name, channel_name)
-            elif effect_type == "group_send":
-                group_name, message = args
-                async_to_sync(self.channel_layer.group_send)(group_name, message)
+        # 효과 실행 및 에러 처리
+        result = async_to_sync(execute_effects)(effects, self.channel_layer)
+        if isinstance(result, dict) and result.get("type") == "error":
+            self.close(code=4000)
+            return
     
     def receive(self, text_data):
         data = json.loads(text_data)
@@ -91,37 +81,42 @@ class ChatConsumer(WebsocketConsumer):
             current_state = ChatSystemState.get()
             ChatSystemState.commit(current_state, system_data)
         
-        # 효과 실행
-        for effect_type, *args in effects:
-            if effect_type == "group_send":
-                group_name, message = args
-                async_to_sync(self.channel_layer.group_send)(group_name, message)
-            elif effect_type == "send":
-                channel_name, message = args
-                if channel_name == self.channel_name:
-                    self.send(text_data=json.dumps(message))
+        # 효과 실행 및 에러 처리
+        result = async_to_sync(execute_effects)(effects, self.channel_layer)
+        if isinstance(result, dict) and result.get("type") == "error":
+            self.close(code=4000)
+            return
     
     # 채널 레이어 이벤트 핸들러
     def chat_message(self, event):
+        timestamp = event.get("timestamp", get_current_timestamp())
+        formatted_time = datetime.fromtimestamp(timestamp).strftime("%Y-%m-%d %H:%M:%S")
         self.send(text_data=json.dumps({
             "type": "chat_message",
             "message": event["content"],
             "sender": event["sender_id"],
-            "timestamp": event["timestamp"]
+            "timestamp": timestamp,
+            "formatted_time": formatted_time
         }))
     
     def system_message(self, event):
+        timestamp = event.get("timestamp", get_current_timestamp())
+        formatted_time = datetime.fromtimestamp(timestamp).strftime("%Y-%m-%d %H:%M:%S")
         self.send(text_data=json.dumps({
             "type": "system_message",
             "message": event["content"],
             "sender": "system",
-            "timestamp": event["timestamp"]
+            "timestamp": timestamp,
+            "formatted_time": formatted_time
         }))
     
     def error_message(self, event):
+        timestamp = event.get("timestamp", get_current_timestamp())
+        formatted_time = datetime.fromtimestamp(timestamp).strftime("%Y-%m-%d %H:%M:%S")
         self.send(text_data=json.dumps({
             "type": "error",
             "message": event["content"],
             "sender": "system",
-            "timestamp": event["timestamp"]
+            "timestamp": timestamp,
+            "formatted_time": formatted_time
         })) 

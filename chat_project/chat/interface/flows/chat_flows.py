@@ -2,6 +2,7 @@ from typing import Dict, Any, Tuple, List
 from ...application.operations import room_operations, message_operations
 from ...application.validation import schema_validator
 import base64
+from ...utils import get_current_timestamp
 
 def _encode_group_name(room_name: str) -> str:
     """방 이름을 안전한 그룹 이름으로 인코딩"""
@@ -10,7 +11,8 @@ def _encode_group_name(room_name: str) -> str:
 def handle_connection_flow(connection_data: Dict[str, Any]) -> Tuple[Dict[str, Any], List[Tuple]]:
     """연결 처리 흐름"""
     if not schema_validator.validate_connection_data(connection_data):
-        return {}, [("error", "Invalid connection data")]
+        error_message = message_operations.create_error_message("잘못된 연결 데이터입니다.")
+        return {}, [("error", error_message)]
     
     room_name = connection_data["roomName"]
     user_id = connection_data["userId"]
@@ -25,6 +27,7 @@ def handle_connection_flow(connection_data: Dict[str, Any]) -> Tuple[Dict[str, A
     
     # 입장 메시지 생성
     join_message = message_operations.create_system_join_message(user_id)
+    join_message["timestamp"] = get_current_timestamp()
     
     # 효과 정의
     effects = [
@@ -37,7 +40,8 @@ def handle_connection_flow(connection_data: Dict[str, Any]) -> Tuple[Dict[str, A
 def handle_disconnection_flow(connection_data: Dict[str, Any]) -> Tuple[Dict[str, Any], List[Tuple]]:
     """연결 종료 처리 흐름"""
     if not schema_validator.validate_connection_data(connection_data):
-        return {}, [("error", "Invalid connection data")]
+        error_message = message_operations.create_error_message("잘못된 연결 데이터입니다.")
+        return {}, [("error", error_message)]
     
     room_name = connection_data["roomName"]
     user_id = connection_data["userId"]
@@ -49,6 +53,7 @@ def handle_disconnection_flow(connection_data: Dict[str, Any]) -> Tuple[Dict[str
     
     # 퇴장 메시지 생성
     leave_message = message_operations.create_system_leave_message(user_id)
+    leave_message["timestamp"] = get_current_timestamp()
     
     # 효과 정의
     effects = [
@@ -60,8 +65,13 @@ def handle_disconnection_flow(connection_data: Dict[str, Any]) -> Tuple[Dict[str
 
 def handle_message_flow(connection_data: Dict[str, Any], content: str) -> Tuple[Dict[str, Any], List[Tuple]]:
     """메시지 처리 흐름"""
-    if not schema_validator.validate_connection_data(connection_data) or not content:
-        return {}, [("error", "Invalid message data")]
+    if not schema_validator.validate_connection_data(connection_data):
+        error_message = message_operations.create_error_message("잘못된 연결 데이터입니다.")
+        return {}, [("error", error_message)]
+    
+    if not content:
+        error_message = message_operations.create_error_message("메시지 내용이 없습니다.")
+        return {}, [("error", error_message)]
     
     user_id = connection_data["userId"]
     room_name = connection_data["roomName"]
@@ -69,10 +79,12 @@ def handle_message_flow(connection_data: Dict[str, Any], content: str) -> Tuple[
     
     # 메시지 생성
     message_data = message_operations.create_user_message(content, user_id)
+    message_data["timestamp"] = get_current_timestamp()
     
     # 메시지 검증
     if not schema_validator.validate_chat_message(message_data):
         error_message = message_operations.create_error_message("메시지 형식이 올바르지 않습니다.")
+        error_message["timestamp"] = get_current_timestamp()
         return {}, [("send", connection_data["channelName"], error_message)]
     
     # 효과 정의
