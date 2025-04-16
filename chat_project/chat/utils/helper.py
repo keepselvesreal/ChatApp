@@ -1,8 +1,7 @@
 from typing import Dict, Any, List
-import copy
 
 def get_nested(data: Dict[str, Any], path: List[str], default=None) -> Any:
-    """중첩된 딕셔너리에서 값을 안전하게, Lodash _.get 방식으로 가져오는 함수"""
+    """중첩된 딕셔너리에서 값 가져오기"""
     current = data
     for key in path:
         if isinstance(current, dict) and key in current:
@@ -11,17 +10,17 @@ def get_nested(data: Dict[str, Any], path: List[str], default=None) -> Any:
             return default
     return current
 
-def set_value(data: Dict[str, Any], path, value) -> Dict[str, Any]:
-    """불변 방식으로 중첩된 딕셔너리에 값을 설정하는 함수"""
-    if isinstance(path, str):
-        path = [path]
+def set_value(data: Dict[str, Any], path: List[str], value: Any) -> Dict[str, Any]:
+    """중첩된 딕셔너리에 값 설정하기"""
+    if not path:
+        return value
     
-    result = copy.deepcopy(data)
+    result = data.copy()
     current = result
     
-    # 마지막 키를 제외한 모든 키로 경로 탐색
-    for key in path[:-1]:
-        if key not in current:
+    # 마지막 키를 제외한 모든 키에 대해 중첩 딕셔너리 탐색
+    for i, key in enumerate(path[:-1]):
+        if key not in current or not isinstance(current[key], dict):
             current[key] = {}
         current = current[key]
     

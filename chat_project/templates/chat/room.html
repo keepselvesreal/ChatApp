@@ -133,16 +133,20 @@
                 const data = JSON.parse(e.data);
                 console.log('메시지 수신:', data);
                 
-                const message = data.message;
-                const userId = data.user_id;
-                
-                // 내 사용자 ID 저장
-                if (userId !== 'system' && !myUserId) {
-                    myUserId = userId;
+                if (data.type === 'chat_message' || data.type === 'system_message') {
+                    const message = data.message;
+                    const sender = data.sender;
+                    
+                    // 내 사용자 ID 저장
+                    if (sender !== 'system' && !myUserId) {
+                        myUserId = sender;
+                    }
+                    
+                    // 메시지 추가
+                    addMessage(message, sender);
+                } else if (data.type === 'error') {
+                    addMessage(data.message, 'error');
                 }
-                
-                // 메시지 추가
-                addMessage(message, userId);
             };
             
             // 연결 종료 시
