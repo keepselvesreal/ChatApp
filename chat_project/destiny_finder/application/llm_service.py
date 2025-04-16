@@ -1,6 +1,7 @@
 from typing import Dict, List, Any
 import random
 from datetime import datetime
+from ..domain import recommendation as recommendation_domain
 
 def get_mock_llm_responses() -> List[str]:
     """가상 LLM 응답 목록"""
@@ -21,16 +22,18 @@ def get_mock_llm_follow_ups() -> List[str]:
         "이전 관계에서 배운 점이 있다면 무엇인가요?"
     ]
 
-def generate_llm_response(message: str, chat_history: List[Dict[str, Any]]) -> str:
+def generate_llm_response(message: str, chat_history: List[Dict[str, Any]]) -> Dict[str, Any]:
     """사용자 메시지와 대화 내역을 바탕으로 LLM 응답 생성"""
-    responses = get_mock_llm_responses()
-    follow_ups = get_mock_llm_follow_ups()
+    # 추천 사용자 목록 가져오기
+    recommended_users = recommendation_domain.get_recommendations(message)
     
-    # 간단한 응답 선택 (실제 구현에서는 더 복잡한 로직이 필요)
-    response = random.choice(responses)
+    # 추천 사용자 목록을 HTML 형식으로 포맷팅 (클릭 가능한 링크)
+    user_mentions = ", ".join([f"<a href='#' class='user-mention' data-user-id='{user['id']}'>{user['name']}</a>" for user in recommended_users])
     
-    # 50% 확률로 후속 질문 추가
-    if random.random() > 0.5:
-        response += "\n\n" + random.choice(follow_ups)
+    # 응답 메시지 생성
+    response_text = f"당신에게 맞는 사람을 찾아봤어요. {user_mentions} 중에서 마음에 드는 분이 있으신가요? 이름을 클릭하면 더 자세한 정보를 볼 수 있어요."
     
-    return response 
+    return {
+        "text": response_text,
+        "recommended_users": recommended_users
+    } 
