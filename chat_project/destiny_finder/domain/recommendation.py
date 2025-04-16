@@ -1,4 +1,4 @@
-from typing import Dict, List, Any
+from typing import Dict, List, Any, Optional
 import random
 from ..utils.timestamp import get_current_timestamp
 
@@ -117,22 +117,81 @@ def get_mock_questions() -> Dict[str, List[Dict[str, Any]]]:
         ]
     }
 
-def get_recommendations(message: str, count: int = 2) -> List[Dict[str, Any]]:
-    """메시지를 바탕으로 추천 사용자 목록 반환"""
+# 사용자 메시지 데이터 타입
+def create_user_message(content: str) -> Dict[str, Any]:
+    """사용자 메시지 데이터 생성"""
+    return {
+        "content": content,
+        "timestamp": get_current_timestamp()
+    }
+
+# 추천 요청 데이터 타입
+def create_recommendation_request(message: Dict[str, Any], count: int = 2) -> Dict[str, Any]:
+    """추천 요청 데이터 생성"""
+    return {
+        "message": message,
+        "count": count,
+        "timestamp": get_current_timestamp()
+    }
+
+# 추천 요청으로부터 메시지 내용 반환
+def get_message_from_request(request: Dict[str, Any]) -> str:
+    """추천 요청으로부터 메시지 내용 반환"""
+    if isinstance(request, dict) and "message" in request:
+        message = request["message"]
+        if isinstance(message, dict) and "content" in message:
+            return message["content"]
+        elif isinstance(message, str):
+            return message
+    return ""
+
+# 추천 요청으로부터 요청 개수 반환
+def get_count_from_request(request: Dict[str, Any]) -> int:
+    """추천 요청으로부터 요청 개수 반환"""
+    return request.get("count", 2) if isinstance(request, dict) else 2
+
+def get_recommendations(request: Dict[str, Any]) -> List[Dict[str, Any]]:
+    """추천 요청을 바탕으로 추천 사용자 목록 반환"""
+    # 메시지 내용 추출
+    message_content = get_message_from_request(request)
+    count = get_count_from_request(request)
+    
     # 실제 구현에서는 메시지 분석 및 사용자 매칭 등의 로직이 필요
     # 지금은 가상 데이터에서 랜덤하게 선택
     recommendations = get_mock_recommendations()
     return random.sample(recommendations, min(count, len(recommendations)))
 
-def get_recommendation_profile(recommendation_id: str) -> Dict[str, Any]:
+# 프로필 요청 데이터 타입
+def create_profile_request(user_id: str) -> Dict[str, Any]:
+    """프로필 요청 데이터 생성"""
+    return {
+        "user_id": user_id,
+        "timestamp": get_current_timestamp()
+    }
+
+# 프로필 요청으로부터 사용자 ID 반환
+def get_user_id_from_request(request: Dict[str, Any]) -> Optional[str]:
+    """프로필 요청으로부터 사용자 ID 반환"""
+    if isinstance(request, dict):
+        return request.get("user_id")
+    elif isinstance(request, str):
+        return request
+    return None
+
+def get_recommendation_profile(request: Dict[str, Any]) -> Dict[str, Any]:
     """추천 사용자의 프로필 정보 반환"""
+    # 사용자 ID 추출
+    user_id = get_user_id_from_request(request)
+    if not user_id:
+        return {}
+        
     recommendations = get_mock_recommendations()
     questions_by_user = get_mock_questions()
     
     # ID로 추천 정보 찾기
     recommendation = None
     for rec in recommendations:
-        if rec["id"] == recommendation_id:
+        if rec["id"] == user_id:
             recommendation = rec
             break
     
@@ -140,7 +199,7 @@ def get_recommendation_profile(recommendation_id: str) -> Dict[str, Any]:
         return {}
     
     # 사용자 질문/답변 찾기
-    questions = questions_by_user.get(recommendation_id, [])
+    questions = questions_by_user.get(user_id, [])
     
     # 전체 프로필 정보 구성
     return {
