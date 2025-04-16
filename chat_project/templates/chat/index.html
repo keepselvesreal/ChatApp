@@ -99,8 +99,8 @@
     <!-- 탭 메뉴 추가 -->
     <div class="tab-container">
         <ul class="tab-menu">
-            <li class="active" data-href="/">채팅</li>
-            <li data-href="/question/">오늘의 질문</li>
+            <li class="active" data-href="/chat/">채팅</li>
+            <li data-href="/taste/question/">오늘의 질문</li>
             <li data-href="/fortune/">운명 찾기</li>
         </ul>
     </div>
@@ -120,7 +120,7 @@
                 <ul>
                     {% for room in rooms %}
                         <li>
-                            <a href="{% url 'room' room_name=room.name %}">{{ room.name }}</a>
+                            <a href="{% url 'chat:room' room_name=room.name %}">{{ room.name }}</a>
                             <span>({{ room.created_at|date:"Y-m-d H:i" }})</span>
                         </li>
                     {% endfor %}

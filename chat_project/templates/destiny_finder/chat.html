@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8"/>
+    <title>운명 찾기</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        h1 {
+            color: #333;
+        }
+        
+        /* 탭 스타일 */
+        .tab-container {
+            margin-bottom: 30px;
+            border-bottom: 1px solid #ddd;
+        }
+        .tab-menu {
+            display: flex;
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+        .tab-menu li {
+            padding: 10px 20px;
+            cursor: pointer;
+            margin-right: 5px;
+            background-color: #f1f1f1;
+            border: 1px solid #ddd;
+            border-bottom: none;
+            border-radius: 5px 5px 0 0;
+        }
+        .tab-menu li.active {
+            background-color: #fff;
+            border-bottom: 1px solid #fff;
+            margin-bottom: -1px;
+            font-weight: bold;
+        }
+        .tab-menu li:hover {
+            background-color: #e9e9e9;
+        }
+        
+        /* 채팅 스타일 */
+        .chat-container {
+            height: 400px;
+            border: 1px solid #ddd;
+            overflow-y: auto;
+            padding: 10px;
+            margin-bottom: 15px;
+            background-color: #f9f9f9;
+            border-radius: 8px;
+        }
+        .message {
+            margin-bottom: 10px;
+            padding: 8px 12px;
+            border-radius: 18px;
+            max-width: 80%;
+            word-wrap: break-word;
+        }
+        .user-message {
+            background-color: #DCF8C6;
+            align-self: flex-end;
+            margin-left: auto;
+        }
+        .llm-message {
+            background-color: #ECECEC;
+            align-self: flex-start;
+        }
+        .message-input {
+            width: 85%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        .send-btn {
+            width: 12%;
+            padding: 10px;
+            background-color: #9C27B0;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        .send-btn:hover {
+            background-color: #7B1FA2;
+        }
+        
+        .fortune-container {
+            margin-top: 20px;
+            padding: 20px;
+            background-color: #f9f9f9;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+    </style>
+</head>
+<body>
+    <h1>Django 채팅 앱</h1>
+    
+    <!-- 탭 메뉴 -->
+    <div class="tab-container">
+        <ul class="tab-menu">
+            <li data-href="/chat/">채팅</li>
+            <li data-href="/taste/question/">오늘의 질문</li>
+            <li class="active">운명 찾기</li>
+        </ul>
+    </div>
+    
+    <div class="fortune-container">
+        <h2>운명 찾기</h2>
+        <p>당신에게 맞는 이상적인 파트너를 찾아보세요.</p>
+        
+        <!-- 채팅 영역 -->
+        <div class="chat-container" id="chat-container"></div>
+        
+        <div class="chat-input-area">
+            <input type="text" class="message-input" id="message-input" placeholder="메시지를 입력하세요...">
+            <button class="send-btn" id="send-message">전송</button>
+        </div>
+    </div>
+    
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // 탭 기능 구현
+            const tabMenus = document.querySelectorAll('.tab-menu li');
+            
+            tabMenus.forEach(function(tab) {
+                tab.addEventListener('click', function() {
+                    const href = this.getAttribute('data-href');
+                    if (href) {
+                        window.location.href = href;
+                    }
+                });
+            });
+            
+            // 채팅 관련 변수
+            const chatContainer = document.getElementById('chat-container');
+            const messageInput = document.getElementById('message-input');
+            const sendButton = document.getElementById('send-message');
+            
+            // 메시지 전송 기능
+            sendButton.addEventListener('click', sendMessage);
+            messageInput.addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    sendMessage();
+                }
+            });
+            
+            function sendMessage() {
+                const message = messageInput.value.trim();
+                if (!message) return;
+                
+                // 사용자 메시지 UI에 추가
+                addMessage('user', message);
+                messageInput.value = '';
+                
+                // 서버에 메시지 전송
+                fetch('/destiny/api/send-message/', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': getCookie('csrftoken')
+                    },
+                    body: JSON.stringify({ message: message })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    // LLM 응답 UI에 추가
+                    addMessage('llm', data.response);
+                });
+            }
+            
+            function addMessage(sender, content) {
+                const messageDiv = document.createElement('div');
+                messageDiv.classList.add('message');
+                messageDiv.classList.add(sender === 'user' ? 'user-message' : 'llm-message');
+                
+                // 개행문자를 <br>로 변환
+                content = content.replace(/\n/g, '<br>');
+                messageDiv.innerHTML = content;
+                
+                chatContainer.appendChild(messageDiv);
+                chatContainer.scrollTop = chatContainer.scrollHeight;
+            }
+            
+            // 채팅 내역 불러오기
+            fetch('/destiny/api/chat-history/')
+                .then(response => response.json())
+                .then(data => {
+                    data.messages.forEach(msg => {
+                        addMessage(msg.sender, msg.content);
+                    });
+                });
+            
+            // CSRF 토큰 가져오기
+            function getCookie(name) {
+                const value = `; ${document.cookie}`;
+                const parts = value.split(`; ${name}=`);
+                if (parts.length === 2) return parts.pop().split(';').shift();
+            }
+        });
+    </script>
+</body>
+</html> 

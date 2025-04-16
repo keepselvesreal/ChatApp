@@ -23,6 +23,8 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'channels',
     'chat',
+    'taste_finder',  # 취향 찾기 앱 등록
+    'destiny_finder',  # 운명 찾기 앱 등록
 ]
 
 MIDDLEWARE = [
