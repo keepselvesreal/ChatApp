@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8"/>
+    <title>운명 찾기</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        h1 {
+            color: #333;
+        }
+        
+        /* 탭 스타일 */
+        .tab-container {
+            margin-bottom: 30px;
+            border-bottom: 1px solid #ddd;
+        }
+        .tab-menu {
+            display: flex;
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+        .tab-menu li {
+            padding: 10px 20px;
+            cursor: pointer;
+            margin-right: 5px;
+            background-color: #f1f1f1;
+            border: 1px solid #ddd;
+            border-bottom: none;
+            border-radius: 5px 5px 0 0;
+        }
+        .tab-menu li.active {
+            background-color: #fff;
+            border-bottom: 1px solid #fff;
+            margin-bottom: -1px;
+            font-weight: bold;
+        }
+        .tab-menu li:hover {
+            background-color: #e9e9e9;
+        }
+        
+        /* 운명 찾기 스타일 */
+        .fortune-container {
+            margin-top: 20px;
+            padding: 20px;
+            background-color: #f9f9f9;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .fortune-form {
+            margin-bottom: 30px;
+        }
+        .fortune-input {
+            padding: 10px;
+            width: 150px;
+            margin-right: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        .fortune-btn {
+            padding: 10px 15px;
+            background-color: #9C27B0;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        .fortune-btn:hover {
+            background-color: #7B1FA2;
+        }
+        .fortune-result {
+            display: none;
+            margin-top: 30px;
+            padding: 20px;
+            background-color: #E8EAF6;
+            border-radius: 8px;
+            border-left: 5px solid #3F51B5;
+        }
+        .fortune-result.show {
+            display: block;
+            animation: fadeIn 1s;
+        }
+        .fortune-title {
+            font-size: 1.2em;
+            font-weight: bold;
+            color: #3F51B5;
+            margin-bottom: 15px;
+        }
+        .fortune-text {
+            line-height: 1.6;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+    </style>
+</head>
+<body>
+    <h1>Django 채팅 앱</h1>
+    
+    <!-- 탭 메뉴 -->
+    <div class="tab-container">
+        <ul class="tab-menu">
+            <li data-href="/">채팅</li>
+            <li data-href="/question/">오늘의 질문</li>
+            <li class="active">운명 찾기</li>
+        </ul>
+    </div>
+    
+    <div class="fortune-container">
+        <h2>운명 찾기</h2>
+        <p>당신의 생년월일을 입력하고 운명을 확인해보세요.</p>
+        
+        <div class="fortune-form">
+            <input type="date" class="fortune-input" id="birthdate">
+            <button class="fortune-btn" id="find-fortune">운명 찾기</button>
+        </div>
+        
+        <div class="fortune-result" id="fortune-result">
+            <div class="fortune-title">당신의 운명</div>
+            <div class="fortune-text" id="fortune-text"></div>
+        </div>
+    </div>
+    
+    <script>
+        // 탭 기능 구현
+        document.addEventListener('DOMContentLoaded', function() {
+            const tabMenus = document.querySelectorAll('.tab-menu li');
+            
+            tabMenus.forEach(function(tab) {
+                tab.addEventListener('click', function() {
+                    const href = this.getAttribute('data-href');
+                    if (href) {
+                        window.location.href = href;
+                    }
+                });
+            });
+            
+            // 운명 찾기 기능 구현
+            const fortuneBtn = document.getElementById('find-fortune');
+            const birthdateInput = document.getElementById('birthdate');
+            const fortuneResult = document.getElementById('fortune-result');
+            const fortuneText = document.getElementById('fortune-text');
+            
+            const fortunes = [
+                "당신은 타고난 리더십을 가지고 있습니다. 많은 사람들을 이끌고 영향력을 행사할 것입니다.",
+                "예술적 재능이 당신의 본질입니다. 창의성을 발휘하여 아름다움을 세상에 전할 것입니다.",
+                "분석적인 두뇌를 가졌습니다. 논리적 사고와 문제 해결 능력이 탁월할 것입니다.",
+                "사람들과의 관계에서 행복을 찾을 것입니다. 소통과 배려가 당신의 강점입니다.",
+                "도전을 두려워하지 않는 용기가 당신의 운명을 열어갈 것입니다.",
+                "지식을 추구하는 열정이 당신의 삶을 풍요롭게 할 것입니다.",
+                "균형과 조화를 중요시하는 당신은 안정된 삶을 살 것입니다.",
+                "직관적인 통찰력이 당신의 큰 무기입니다. 미래를 예측하는 능력이 뛰어납니다."
+            ];
+            
+            fortuneBtn.addEventListener('click', function() {
+                const birthdate = birthdateInput.value;
+                
+                if (!birthdate) {
+                    alert('생년월일을 입력해주세요.');
+                    return;
+                }
+                
+                // 간단한 해시 함수로 생년월일을 기반으로 운명 텍스트 선택
+                const dateSum = birthdate.split('-').reduce((sum, part) => sum + Number(part), 0);
+                const fortuneIndex = dateSum % fortunes.length;
+                
+                fortuneText.textContent = fortunes[fortuneIndex];
+                fortuneResult.classList.add('show');
+            });
+        });
+    </script>
+</body>
+</html> 

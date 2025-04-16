@@ -21,3 +21,11 @@ def room(request, room_name):
     return render(request, 'chat/room.html', {
         'room_name': room_name
     })
+
+def question(request):
+    # 오늘의 질문 페이지
+    return render(request, 'chat/question.html')
+
+def fortune(request):
+    # 운명 찾기 페이지
+    return render(request, 'chat/fortune.html')
